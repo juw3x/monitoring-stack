@@ -1,0 +1,62 @@
+{
+  "title": "Nginx Overview",
+  "uid": "nginx-overview",
+  "tags": ["nginx"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Requests/sec by status",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "targets": [{
+        "expr": "sum by(status) (rate(nginx_http_requests_total[5m]))",
+        "legendFormat": "{{status}}", "refId": "A"
+      }],
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []}
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Active connections",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "targets": [{
+        "expr": "nginx_connections_active",
+        "legendFormat": "active", "refId": "A"
+      }],
+      "fieldConfig": {"defaults": {}, "overrides": []}
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Request latency (p50/p95/p99)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "targets": [
+        {"expr": "histogram_quantile(0.5, sum(rate(nginx_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50", "refId": "A"},
+        {"expr": "histogram_quantile(0.95, sum(rate(nginx_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95", "refId": "B"},
+        {"expr": "histogram_quantile(0.99, sum(rate(nginx_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99", "refId": "C"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Bandwidth",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "targets": [
+        {"expr": "sum(rate(nginx_http_requests_total[5m])) * 1000", "legendFormat": "req/s (approx)", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {}, "overrides": []}
+    },
+    {
+      "id": 5, "type": "logs", "title": "Nginx access log (Loki)",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 16},
+      "datasource": {"type": "loki", "uid": "Loki"},
+      "targets": [{
+        "expr": "{job=\"nginx\"} | json | line_format \"{{.request_method}} {{.request_uri}} -> {{.status}} ({{.request_time}}s)\"",
+        "refId": "A"
+      }],
+      "options": {"showTime": true, "showLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true}
+    }
+  ]
+}
